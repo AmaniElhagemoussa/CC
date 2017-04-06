@@ -1,57 +1,71 @@
-
-  var express = require('express');
+var express = require('express');
   var app = express();
-  var server = require('http').Server(app);
-  var io = require('socket.io')(server);
+  var http = require('http').Server(app);
+  var io = require('socket.io')(http);
   var port = process.env.PORT || 3000;
   
-  server.listen(port, function () {
-    console.log('Updated : Server listening at port %d', port);
+  http.listen(port, function () {
+    console.log('Server listening on port :', port);
   });
   
-  // Routing
   app.use('/js',  express.static(__dirname + '/public/js'));
   app.use('/css', express.static(__dirname + '/public/css'));
   app.use(express.static(__dirname + '/public'));
   
-  // Chatroom
   
-  // usernames which are currently connected to the chat
   var usernames = {};
-  var numUsers = 0;
+  var sockets = {};
   
   io.on('connection', function (socket) {
     var addedUser = false;
   
     // when the client emits 'new message', this listens and executes
-    socket.on('new message', function (data) {
+    socket.on('chat message', function (data) {
       // we tell the client to execute 'new message'
-      socket.broadcast.emit('new message', {
+      socket.broadcast.emit('chat message', {
         username: socket.username,
         message: data,
         timestamp: Date.now()
       });
       console.log('I sent it');
     });
+    
+socket.on('private chat', function(data){
+	if(data.msgTo in usernames && data.msgTo != socket.username){
+		if(data.msgTo in sockets){
+    		console.log(socket.username +' whispers to ' +data.msgTo + ' und sagt ' +data.message);
+
+			sockets[data.msgTo].emit('chat message', {
+				username: socket.username,
+				message:data.message,
+				timestamp:Date.now()
+			});
+    		
+	}}
+		
+    	console.log('privat gechattet');
+    });
+  
   
     // when the client emits 'add user', this listens and executes
     socket.on('add user', function (username) {
       // we store the username in the socket session for this client
       socket.username = username;
       // add the client's username to the global list
+      sockets[socket.username] = socket;
       usernames[username] = username;
-      ++numUsers;
       addedUser = true;
       socket.emit('login', {
-        numUsers: numUsers
+        list: Object.keys(usernames)
       });
       // echo globally (all clients) that a person has connected
       socket.broadcast.emit('user joined', {
         username: socket.username,
-        numUsers: numUsers
+        list: Object.keys(usernames)
       });
     });
-  
+    
+    
     // when the client emits 'typing', we broadcast it to others
     socket.on('typing', function () {
       socket.broadcast.emit('typing', {
@@ -71,15 +85,11 @@
       // remove the username from global usernames list
       if (addedUser) {
         delete usernames[socket.username];
-        --numUsers;
   
         // echo globally that this client has left
         socket.broadcast.emit('user left', {
           username: socket.username,
-          numUsers: numUsers
         });
       }
     });
   });
-  
-  
