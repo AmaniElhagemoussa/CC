@@ -18,36 +18,8 @@ var express = require('express');
   
   io.on('connection', function (socket) {
     var addedUser = false;
-  
-    // when the client emits 'new message', this listens and executes
-    socket.on('chat message', function (data) {
-      // we tell the client to execute 'new message'
-      socket.broadcast.emit('chat message', {
-        username: socket.username,
-        message: data,
-        timestamp: Date.now()
-      });
-      console.log('I sent it');
-    });
     
-socket.on('private chat', function(data){
-	if(data.msgTo in usernames && data.msgTo != socket.username){
-		if(data.msgTo in sockets){
-    		console.log(socket.username +' whispers to ' +data.msgTo + ' und sagt ' +data.message);
-
-			sockets[data.msgTo].emit('chat message', {
-				username: socket.username,
-				message:data.message,
-				timestamp:Date.now()
-			});
-    		
-	}}
-		
-    	console.log('privat gechattet');
-    });
-  
-  
-    // when the client emits 'add user', this listens and executes
+ // when the client emits 'add user', this listens and executes
     socket.on('add user', function (username) {
       // we store the username in the socket session for this client
       socket.username = username;
@@ -65,20 +37,34 @@ socket.on('private chat', function(data){
       });
     });
     
-    
-    // when the client emits 'typing', we broadcast it to others
-    socket.on('typing', function () {
-      socket.broadcast.emit('typing', {
-        username: socket.username
-      });
-    });
   
-    // when the client emits 'stop typing', we broadcast it to others
-    socket.on('stop typing', function () {
-      socket.broadcast.emit('stop typing', {
-        username: socket.username
+    // when the client emits 'new message', this listens and executes
+    socket.on('chat message', function (data) {
+      // we tell the client to execute 'new message'
+      socket.broadcast.emit('chat message', {
+        username: socket.username,
+        message: data,
+        timestamp: Date.now()
       });
+      console.log('Message sent');
     });
+    
+socket.on('private chat', function(data){
+	if(data.msgTo in usernames && data.msgTo != socket.username){
+		if(data.msgTo in sockets){
+    		console.log(socket.username +' whispers to ' +data.msgTo + ' und sagt ' +data.message);
+
+			sockets[data.msgTo].emit('chat message', {
+				username: socket.username,
+				message:data.message,
+				timestamp:Date.now()
+			});
+    		
+	}}
+		
+    	console.log('privat gechattet');
+    });
+ 
   
     // when the user disconnects.. perform this
     socket.on('disconnect', function () {
