@@ -40,28 +40,44 @@ var express = require('express');
   
     // when the client emits 'new message', this listens and executes
     socket.on('chat message', function (data) {
-      // we tell the client to execute 'new message'
-      socket.broadcast.emit('chat message', {
-        username: socket.username,
-        message: data,
-        timestamp: Date.now()
-      });
-      console.log('Message sent');
+
+      
+    	io.emit('chat message', {
+    		username: socket.username,
+    		message: data,
+    		timestamp: Date.now()
+    	});
+    	console.log('Message sent');
     });
     
 socket.on('private chat', function(data){
-	if(data.msgTo in usernames && data.msgTo != socket.username){
-		if(data.msgTo in sockets){
+	if(data.msgTo in usernames && data.msgTo in sockets){
+		if(data.msgTo!= socket.username){
     		console.log(socket.username +' whispers to ' +data.msgTo + ' und sagt ' +data.message);
 
 			sockets[data.msgTo].emit('chat message', {
 				username: socket.username,
 				message:data.message,
-				timestamp:Date.now()
+				timestamp:Date.now(),
+				privat:true
+			});
+			sockets[socket.username].emit('chat message', {
+				username: socket.username,
+				message:'@'+data.msgTo+' '+data.message,
+				timestamp:Date.now(),
+				privat:true,
+				
 			});
     		
-	}}
-		
+		}else{
+			sockets[socket.username].emit('self message');
+			
+		}
+	}else{
+		sockets[socket.username].emit('wrong user', {
+			username: data.msgTo
+		});
+	}
     	console.log('privat gechattet');
     });
  
