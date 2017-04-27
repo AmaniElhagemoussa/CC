@@ -5,13 +5,16 @@ $(function() {
 	// Initialize varibles
 	var $window = $(window);
 	var $usernameInput = $('.usernameInput'); // Input for username
+	var $passwordInput = $('.passwordInput');
 	var $messages = $('.messages'); // Messages area
 	var $inputMessage = $('.inputMessage'); // Input message input box
+	
 
 	var $loginPage = $('.login.page'); // The login page
 	var $chatPage = $('.chat.page'); // The chatroom page
 
 	// Prompt for setting a username
+	var password;
 	var username;
 	var connected = false;
 	var typing = false;
@@ -31,10 +34,36 @@ $(function() {
 			$chatPage.show();
 			$loginPage.off('click');
 			$currentInput = $inputMessage.focus();
-
 			// Tell the server your username
-			socket.emit('add user', username);
+			socket.emit('add user', {
+				name: username,
+				pwd: password
+			});
+			
+//			$passwordInput.show();
+//			$currentInput = $passwordInput.focus();
+//
+//		}else if(username.length < 2){
+//			alert("Your username is too short!");
 		}
+	}
+	
+	function setPassword(){
+		password = cleanInput($passwordInput.val().trim());
+		
+		if(password){
+			
+		$loginPage.fadeOut();
+		$chatPage.show();
+		$loginPage.off('click');
+		$currentInput = $inputMessage.focus();
+		// Tell the server your username
+		socket.emit('add user', {
+			user: username,
+			pwd: password
+		});
+		}
+		
 	}
 
 	function updateUsersOnline(data, options) {
@@ -183,7 +212,7 @@ $(function() {
 			if (username) {
 				sendMessage();
 				typing = false;
-			} else {
+			}else {
 				setUsername();
 			}
 		}

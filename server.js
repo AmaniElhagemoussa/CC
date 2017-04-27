@@ -1,17 +1,80 @@
+
 var express = require('express');
   var app = express();
-  var http = require('http').Server(app);
-  var io = require('socket.io')(http);
-  var port = process.env.PORT || 3000;
+//  var http = require('http').Server(app);
   
-  http.listen(port, function () {
-    console.log('Server listening on port :', port);
-  });
+
+  var server = require('http').createServer(app);
+  var io = require('socket.io').listen(server);
+  var fs = require('fs');
+  var helmet = require('helmet');
+  var ss = require('socket.io-stream');
+  var path = require('path');
+  var bodyParser = require('body-parser');
+  var config = require('./config.json');
+  var router = require('./router')(io);
+  var helper = require('./helper.js');
+  
+  var options = {
+		  key : fs.readFileSync('key.pem'),
+	      cert: fs.readFileSync('cert.pem'),
+	      passphrase: 'chatapp'
+  };
+  var cfenv = require('cfenv');
+  var appEnv = cfenv.getAppEnv();
+  var Cloudant = require('cloudant');
+  var services;
+  var cloudant;
+  var database;
+  
+  var userSelector = {
+		    "selector": {
+		        "_id": ""
+		    }  
+		};
+  
+  init();
+  
+  
+  app.use(helmet());
+  app.use(helmet.contentSecurityPolicy({
+      directives: {
+          defaultSrc: ["'self'"],
+          styleSrc: ["'self'", 'fonts.googleapis.com', 'fonts.gstatic.com'],
+          fontSrc: ["'self'", 'fonts.googleapis.com', 'fonts.gstatic.com'],
+          connectSrc: ["'self'", "ws://" + appEnv.url.replace('https://', '')]
+      },
+      browserSniff: false,
+      setAllHeaders: true
+  }));
+  app.use(helmet.hsts({
+    maxAge: 604800,
+    force: true,
+      preload: true,
+      fore: true
+  }))
+  app.use(helmet.referrerPolicy({ 
+      policy: 'same-origin' 
+  }));
+  app.use(helmet.xssFilter());
+  app.enable('trust proxy');
+  app.use(bodyParser.json()); // for parsing application/json
+  app.use('/', router);
+  
+  
+// http.listen(port, function () {
+// console.log('Server listening on port :', port);
+// });
   
   app.use('/js',  express.static(__dirname + '/public/js'));
   app.use('/css', express.static(__dirname + '/public/css'));
   app.use(express.static(__dirname + '/public'));
   
+  app.enable('trust proxy');
+ 
+  server.listen(appEnv.port || config.port, function() {
+	    console.log("server listening on " + appEnv.url);
+	  });
   
   var usernames = {};
   var sockets = {};
@@ -20,12 +83,12 @@ var express = require('express');
     var addedUser = false;
     
  // when the client emits 'add user', this listens and executes
-    socket.on('add user', function (username) {
+    socket.on('add user', function (data) {
       // we store the username in the socket session for this client
-      socket.username = username;
+      socket.username = data.name;
       // add the client's username to the global list
       sockets[socket.username] = socket;
-      usernames[username] = username;
+      usernames[data.name] = data.name;
       addedUser = true;
       socket.emit('login', {
         list: Object.keys(usernames)
@@ -95,3 +158,34 @@ socket.on('private chat', function(data){
       }
     });
   });
+  
+  function init() {
+	  console.log("Gehst du rein??");
+      /*
+		 * Search for the cloudant service.
+		 */
+      if (process.env.VCAP_SERVICES) {
+          services = JSON.parse(process.env.VCAP_SERVICES);
+          // Search for available cloudant services.
+          var cloudantService = services['cloudantNoSQLDB'];
+          for (var service in cloudantService) {
+              if (cloudantService[service].name === 'chatappservice') {
+                  cloudant = Cloudant(cloudantService[service].credentials.url);
+              }    
+          }
+      
+      }else {
+      	    var cloudant = Cloudant({
+      	    	"username": "6ecc929f-5f73-456f-87c8-d69bf2f8f4ea-bluemix",
+      	         "password": "cf10ed7805bd6b80e6d9e071ef075b922acc6fa6c5b7f446604193b5b134a51f",
+      	         "host": "6ecc929f-5f73-456f-87c8-d69bf2f8f4ea-bluemix.cloudant.com",
+      	         "port": 443,
+      	         "url": "https://6ecc929f-5f73-456f-87c8-d69bf2f8f4ea-bluemix:cf10ed7805bd6b80e6d9e071ef075b922acc6fa6c5b7f446604193b5b134a51f@6ecc929f-5f73-456f-87c8-d69bf2f8f4ea-bluemix.cloudant.com"
+      	    });
+      	    		
+      }
+       database = cloudant.db.use('cloudcomputingchatapp');
+       if (database === undefined) {
+       console.log("ERROR: The database with the name 'cloudcomputingchatapp' is not defined. You have to define it before you can use the database.");
+       }
+  }
