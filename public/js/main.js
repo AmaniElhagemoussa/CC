@@ -1,14 +1,14 @@
 $(function() {
 	var FADE_TIME = 150; // ms
 	var TYPING_TIMER_LENGTH = 400; // ms
-
+	var passwordRegex = /.{6,}/;
+	var usernameRegex = /[0-9a-zA-Z]{3,}/;
 	// Initialize varibles
 	var $window = $(window);
 	var $usernameInput = $('.usernameInput'); // Input for username
 	var $passwordInput = $('.passwordInput');
 	var $messages = $('.messages'); // Messages area
 	var $inputMessage = $('.inputMessage'); // Input message input box
-	
 
 	var $loginPage = $('.login.page'); // The login page
 	var $chatPage = $('.chat.page'); // The chatroom page
@@ -30,40 +30,32 @@ $(function() {
 
 		// If the username is valid
 		if (username) {
+			
+
+			$passwordInput.show();
+			$currentInput = $passwordInput.focus();
+
+		}
+	}
+	
+	function setPassword() {
+		password = cleanInput($passwordInput.val().trim());
+
+		if ( password) {
+
 			$loginPage.fadeOut();
 			$chatPage.show();
 			$loginPage.off('click');
 			$currentInput = $inputMessage.focus();
 			// Tell the server your username
 			socket.emit('add user', {
-				name: username,
-				pwd: password
+				name : username,
+				password : password
 			});
-			
-//			$passwordInput.show();
-//			$currentInput = $passwordInput.focus();
-//
-//		}else if(username.length < 2){
-//			alert("Your username is too short!");
+		}else{
+			alert("der geht nix rein" +password);
 		}
-	}
-	
-	function setPassword(){
-		password = cleanInput($passwordInput.val().trim());
-		
-		if(password){
-			
-		$loginPage.fadeOut();
-		$chatPage.show();
-		$loginPage.off('click');
-		$currentInput = $inputMessage.focus();
-		// Tell the server your username
-		socket.emit('add user', {
-			user: username,
-			pwd: password
-		});
-		}
-		
+
 	}
 
 	function updateUsersOnline(data, options) {
@@ -72,6 +64,10 @@ $(function() {
 		message += 'Users online: ' + data.list;
 
 		log(message);
+	}
+	
+	function checkPassword(){
+		
 	}
 
 	// Sends a chat message
@@ -91,7 +87,7 @@ $(function() {
 				if (index !== -1) {
 					var name = pmsg.substring(0, index);
 					var msg = pmsg.substring(index + 1);
-					
+
 					socket.emit('private chat', {
 						msgTo : name,
 						message : msg
@@ -119,21 +115,21 @@ $(function() {
 		var $timestampDiv = $('<span class="timestamp"/>').text(
 				formatDate(data.timestamp));
 		var $usernameDiv = $('<span class="username"/>').text(data.username);
-	
-		if(data.privat){
-			var $messageBodyDiv = $('<span class="privateMessageBody"/>')
-			.text(data.message);
-		}else{
-			
-		var $messageBodyDiv = $('<span class="messageBody"/>')
-				.text(data.message);
+
+		if (data.privat) {
+			var $messageBodyDiv = $('<span class="privateMessageBody"/>').text(
+					data.message);
+		} else {
+
+			var $messageBodyDiv = $('<span class="messageBody"/>').text(
+					data.message);
 		}
 		var $messageDiv = $('<li class="message"/>').data('username',
 				data.username).append($usernameDiv, $messageBodyDiv).append(
 				$timestampDiv, $messageBodyDiv);
 
 		addMessageElement($messageDiv, options);
-		
+
 	}
 
 	// Adds a message element to the messages and scrolls to the bottom
@@ -209,10 +205,13 @@ $(function() {
 		}
 		// When the client hits ENTER on their keyboard
 		if (event.which === 13) {
-			if (username) {
+			if (username && password) {
 				sendMessage();
 				typing = false;
-			}else {
+			} else if(username){
+				setPassword();
+			}
+			else{
 				setUsername();
 			}
 		}
@@ -249,15 +248,15 @@ $(function() {
 
 	// Whenever the server emits 'new message', update the chat body
 	socket.on('chat message', function(data) {
-			addChatMessage(data);
+		addChatMessage(data);
 	});
-	
-	socket.on('wrong user', function(data){
-		var message = "The user "+ data.username+" does not exist!";
+
+	socket.on('wrong user', function(data) {
+		var message = "The user " + data.username + " does not exist!";
 		log(message);
 	});
-	
-	socket.on('self message', function(data){
+
+	socket.on('self message', function(data) {
 		var message = "You can't send a private message to yourself!";
 		log(message);
 	});
@@ -272,5 +271,9 @@ $(function() {
 	socket.on('user left', function(data) {
 		log(data.username + ' left');
 		updateUsersOnline(data);
+	});
+	
+	socket.on('alert', function(){
+		alert("not valid");
 	});
 });

@@ -1,25 +1,17 @@
 
 var express = require('express');
   var app = express();
-//  var http = require('http').Server(app);
-  
+// var http = require('http').Server(app);
 
+  var fs = require('fs');
+  var bodyParser = require('body-parser');
+  var helper = require('./helper.js');
+  var helmet = require('helmet');
+  
   var server = require('http').createServer(app);
   var io = require('socket.io').listen(server);
-  var fs = require('fs');
-  var helmet = require('helmet');
-  var ss = require('socket.io-stream');
-  var path = require('path');
-  var bodyParser = require('body-parser');
-  var config = require('./config.json');
   var router = require('./router')(io);
-  var helper = require('./helper.js');
-  
-  var options = {
-		  key : fs.readFileSync('key.pem'),
-	      cert: fs.readFileSync('cert.pem'),
-	      passphrase: 'chatapp'
-  };
+  var config = require('./config.json');
   var cfenv = require('cfenv');
   var appEnv = cfenv.getAppEnv();
   var Cloudant = require('cloudant');
@@ -34,7 +26,6 @@ var express = require('express');
 		};
   
   init();
-  
   
   app.use(helmet());
   app.use(helmet.contentSecurityPolicy({
@@ -60,18 +51,14 @@ var express = require('express');
   app.enable('trust proxy');
   app.use(bodyParser.json()); // for parsing application/json
   app.use('/', router);
-  
-  
-// http.listen(port, function () {
-// console.log('Server listening on port :', port);
-// });
-  
-  app.use('/js',  express.static(__dirname + '/public/js'));
-  app.use('/css', express.static(__dirname + '/public/css'));
+
   app.use(express.static(__dirname + '/public'));
+	  app.use('/js',  express.static(__dirname + '/public/js'));
+	  app.use('/css', express.static(__dirname + '/public/css'));
   
   app.enable('trust proxy');
- 
+  
+  
   server.listen(appEnv.port || config.port, function() {
 	    console.log("server listening on " + appEnv.url);
 	  });
@@ -84,21 +71,61 @@ var express = require('express');
     
  // when the client emits 'add user', this listens and executes
     socket.on('add user', function (data) {
-      // we store the username in the socket session for this client
-      socket.username = data.name;
-      // add the client's username to the global list
-      sockets[socket.username] = socket;
-      usernames[data.name] = data.name;
-      addedUser = true;
-      socket.emit('login', {
-        list: Object.keys(usernames)
-      });
-      // echo globally (all clients) that a person has connected
-      socket.broadcast.emit('user joined', {
-        username: socket.username,
-        list: Object.keys(usernames)
-      });
-    });
+    	userSelector.selector._id = data.user;
+    	var salt = helper.generateSalt();
+        var hashedPassword = helper.hashPassword(data.password, salt);
+        
+    	database.find(userSelector, function(error, dataDB) {
+            if (error) {
+
+            	console.log("neuer user registrieren");
+            	// we store the username in the socket session for this client
+                socket.username = data.name;
+                // add the client's username to the global list
+                sockets[socket.username] = socket;
+                usernames[data.name] = data.name;
+                addedUser = true;
+                 
+                    database.insert({_id: data.user, password: hashedPassword, salt: salt}, function(error, body) {
+                        if (!error) {
+                            console.log("user inserted in db");
+                        } 
+                        
+                        socket.emit('login', {
+                            list: Object.keys(usernames)
+                          });
+                        // echo globally (all clients) that a person has connected
+                        socket.broadcast.emit('user joined', {
+                          username: socket.username,
+                          list: Object.keys(usernames)
+                        });
+                    });  
+            } else if(userSelector in usernames){
+            	console.log("User ist vorhanden!");
+            	socket.username = data.name;
+                // add the client's username to the global list
+                sockets[socket.username] = socket;
+                usernames[data.name] = data.name;
+                addedUser = true;
+               
+                socket.emit('login', {
+                    list: Object.keys(usernames)
+                  });
+                // echo globally (all clients) that a person has connected
+                socket.broadcast.emit('user joined', {
+                  username: socket.username,
+                  list: Object.keys(usernames)
+                });
+                
+            	
+                  
+            }  else{
+            	socket.emit('alert');
+                	
+                }
+    	});
+
+  });
     
   
     // when the client emits 'new message', this listens and executes
@@ -160,7 +187,6 @@ socket.on('private chat', function(data){
   });
   
   function init() {
-	  console.log("Gehst du rein??");
       /*
 		 * Search for the cloudant service.
 		 */
@@ -175,6 +201,7 @@ socket.on('private chat', function(data){
           }
       
       }else {
+    	  console.log("neue db angelegt");
       	    var cloudant = Cloudant({
       	    	"username": "6ecc929f-5f73-456f-87c8-d69bf2f8f4ea-bluemix",
       	         "password": "cf10ed7805bd6b80e6d9e071ef075b922acc6fa6c5b7f446604193b5b134a51f",

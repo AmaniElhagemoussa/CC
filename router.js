@@ -1,3 +1,4 @@
+
 module.exports = function(io) {
 
     var config = require('./config.json');
@@ -29,7 +30,5 @@ module.exports = function(io) {
     router.get('/', function(req, res) {
         res.sendFile(__dirname + '/public/index.html');
     });
-   
-
     return router;
 }

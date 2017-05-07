@@ -29,6 +29,5 @@ module.exports = {
      */
     hashPassword: function(password, salt) {
         return sha256(password + salt);
-    },
-   
+    }
 };
