@@ -1,4 +1,5 @@
-$(function() {
+
+$(document).ready(function() {
 	var FADE_TIME = 150; // ms
 	var TYPING_TIMER_LENGTH = 400; // ms
 	var passwordRegex = /.{6,}/;
@@ -24,36 +25,55 @@ $(function() {
 
 	var socket = io();
 
+	$('$usernameInput').keydown(function(event) {
+  		if(event.keyCode == 13){ //Enter pressed
+    			setUsername();
+ 		}
+	});
+	
+	
 	// Sets the client's username
 	function setUsername() {
 		username = cleanInput($usernameInput.val().trim());
 
 		// If the username is valid
 		if (username) {
-			
-
-			$passwordInput.show();
-			$currentInput = $passwordInput.focus();
-
+			if(usernameRegex.test(username)){
+				$passwordInput.show();
+				$currentInput = $passwordInput.focus();
+			}else{
+				alert("Username must at least contain 3 characters");
+			}
+		}else{
+			alert("Please specify a username");
 		}
 	}
+	
+	$('$usernameInput').keydown(function(event) {
+  		if(event.keyCode == 13){ //Enter pressed
+    			setPassword();
+ 		}
+	});
 	
 	function setPassword() {
 		password = cleanInput($passwordInput.val().trim());
 
-		if ( password) {
-
-			$loginPage.fadeOut();
-			$chatPage.show();
-			$loginPage.off('click');
-			$currentInput = $inputMessage.focus();
-			// Tell the server your username
-			socket.emit('add user', {
-				name : username,
-				password : password
-			});
+		if (username && password) {
+			if(usernameRegex.test(username)){
+				$loginPage.fadeOut();
+				$chatPage.show();
+				$loginPage.off('click');
+				$currentInput = $inputMessage.focus();
+				// Tell the server your username
+				socket.emit('add user', {
+					name : username,
+					password : password
+				});
+			}else{
+				alert("Password  must at least contain 6 characters");
+			}
 		}else{
-			alert("der geht nix rein" +password);
+			alert("Please specify a password");
 		}
 
 	}
@@ -65,10 +85,13 @@ $(function() {
 
 		log(message);
 	}
-	
-	function checkPassword(){
-		
-	}
+
+	$('$inputMessage').keydown(function(event) {
+  		if(event.keyCode == 13){ //Enter pressed
+    			sendMessage();
+			typing = false;
+ 		}
+	});
 
 	// Sends a chat message
 	function sendMessage() {
@@ -198,24 +221,24 @@ $(function() {
 
 	// Keyboard events
 
-	$window.keydown(function(event) {
+	//$window.keydown(function(event) {
 		// Auto-focus the current input when a key is typed
-		if (!(event.ctrlKey || event.metaKey || event.altKey)) {
-			$currentInput.focus();
-		}
+		//if (!(event.ctrlKey || event.metaKey || event.altKey)) {
+		//	$currentInput.focus();
+		//}
 		// When the client hits ENTER on their keyboard
-		if (event.which === 13) {
-			if (username && password) {
-				sendMessage();
-				typing = false;
-			} else if(username){
-				setPassword();
-			}
-			else{
-				setUsername();
-			}
-		}
-	});
+		//if (event.which === 13) {
+		//	if (username && password) {
+		//		sendMessage();
+		//		typing = false;
+		//	} else if(username){
+		//		setPassword();
+		//	}
+		//	else{
+		//		setUsername();
+		//	}
+		//}
+	//});
 
 	$inputMessage.on('input', function() {
 		updateTyping();
@@ -272,8 +295,5 @@ $(function() {
 		log(data.username + ' left');
 		updateUsersOnline(data);
 	});
-	
-	socket.on('alert', function(){
-		alert("not valid");
-	});
+
 });
