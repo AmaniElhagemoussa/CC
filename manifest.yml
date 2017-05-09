@@ -6,6 +6,8 @@ applications:
   name: cloudcomputingchatapp
   host: cloudcomputingchatapp
   disk_quota: 1024M
+  services:
+ - chatappRedis
   
   
  
