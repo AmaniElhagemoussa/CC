@@ -9,7 +9,7 @@ var express = require('express');
   var helmet = require('helmet');
   
   var server = require('http').createServer(app);
-  var io = require('socket.io').listen(server);
+  var io = require('socket.io').listen(server,{transports:['websocket']});
   var router = require('./router')(io);
   var config = require('./config.json');
   var cfenv = require('cfenv');
@@ -18,7 +18,25 @@ var express = require('express');
   var services;
   var cloudant;
   var database;
-  
+  var redis = require('redis');
+
+var redisService = cfEnv.getService('chatappRedis');
+var credentials = !redisService || redisService == null ?  
+{"host":"127.0.0.1", "port":6379} : redisService.credentials;
+
+var subscriber = redis.createClient(credentials.port, credentials.hostname);
+subscriber.on("error", function(err) {
+  console.error('There was an error with the redis client ' + err);
+});
+var publisher = redis.createClient(credentials.port, credentials.hostname);
+publisher.on("error", function(err) {
+  console.error('There was an error with the redis client ' + err);
+});
+if (credentials.password != '') {
+  subscriber.auth(credentials.password);
+  publisher.auth(credentials.password);
+}
+
   var userSelector = {
 		    "selector": {
 		        "_id": ""
