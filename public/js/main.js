@@ -24,8 +24,8 @@ $(function() {
 
 	var socket = io();
 
-	$('$usernameInput').keydown(function(e) {
-  		if(e.keyCode == 13){ //Enter pressed
+	$('$usernameInput').keydown(function(event) {
+  		if(event.keyCode == 13){ //Enter pressed
     			setUsername();
  		}
 	});
@@ -48,8 +48,8 @@ $(function() {
 		}
 	}
 	
-	$('$usernameInput').keydown(function(e) {
-  		if(e.keyCode == 13){ //Enter pressed
+	$('$usernameInput').keydown(function(event) {
+  		if(event.keyCode == 13){ //Enter pressed
     			setPassword();
  		}
 	});
@@ -85,8 +85,8 @@ $(function() {
 		log(message);
 	}
 
-	$('$inputMessage').keydown(function(e) {
-  		if(e.keyCode == 13){ //Enter pressed
+	$('$inputMessage').keydown(function(event) {
+  		if(event.keyCode == 13){ //Enter pressed
     			sendMessage();
 			typing = false;
  		}
