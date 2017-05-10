@@ -20,22 +20,14 @@ var express = require('express');
   var database;
   var redis = require('redis');
 
-var redisService = cfEnv.getService('chatappRedis');
-var credentials = !redisService || redisService == null ?  
-{"host":"127.0.0.1", "port":6379} : redisService.credentials;
+var client = redis.createClient(12168, 'pub-redis-12168.dal-05.1.sl.garantiadata.com', {no_ready_check: true});
+client.auth('p4yTvCGWTxMhOwfU', function (err){
+	if (err) throw err;
+});
 
-var subscriber = redis.createClient(credentials.port, credentials.hostname);
-subscriber.on("error", function(err) {
-  console.error('There was an error with the redis client ' + err);
+client.on('connect', function(){
+	console.log('Connected to Redis');
 });
-var publisher = redis.createClient(credentials.port, credentials.hostname);
-publisher.on("error", function(err) {
-  console.error('There was an error with the redis client ' + err);
-});
-if (credentials.password != '') {
-  subscriber.auth(credentials.password);
-  publisher.auth(credentials.password);
-}
 
   var userSelector = {
 		    "selector": {
