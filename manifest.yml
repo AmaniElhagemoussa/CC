@@ -1,12 +1,9 @@
+  
+  ---
 applications:
-- path: .
-  memory: 256M
-  instances: 1
-  domain: mybluemix.net
-  name: cloudcomputingchatapp
-  host: cloudcomputingchatapp
-  disk_quota: 1024M
- 
-  
-  
+ - name: cloudcomputingchatapp
+   random-route: true
+   memory: 256M
+   instances: 2 
+   domain: mybluemix.net
  
