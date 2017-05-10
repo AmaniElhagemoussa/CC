@@ -4,16 +4,15 @@
   "description": "my first socket.io app",
   "dependencies": {
     "body-parser": "^1.17.1",
-    "cfenv": "^1.0.4",
     "cloudant": "^1.7.1",
     "compression": "^1.6.2",
     "express": "^4.15.2",
     "helmet": "^3.5.0",
     "js-sha256": "^0.5.0",
+    "redis": "^2.7.1",
     "request": "^2.81.0",
     "socket.io": "^1.7.3",
-    "socket.io-stream": "^0.9.1",
-    "redis": "*"
+    "socket.io-stream": "^0.9.1"
   },
   "scripts": {
     "start": "node server.js"

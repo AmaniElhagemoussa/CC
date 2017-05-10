@@ -12,8 +12,6 @@ var express = require('express');
   var io = require('socket.io').listen(server,{transports:['websocket']});
   var router = require('./router')(io);
   var config = require('./config.json');
-  var cfenv = require('cfenv');
-  var appEnv = cfenv.getAppEnv();
   var Cloudant = require('cloudant');
   var services;
   var cloudant;
@@ -38,16 +36,7 @@ client.on('connect', function(){
   init();
   
   app.use(helmet());
-  app.use(helmet.contentSecurityPolicy({
-      directives: {
-          defaultSrc: ["'self'"],
-          styleSrc: ["'self'", 'fonts.googleapis.com', 'fonts.gstatic.com'],
-          fontSrc: ["'self'", 'fonts.googleapis.com', 'fonts.gstatic.com'],
-          connectSrc: ["'self'", "ws://" + appEnv.url.replace('https://', '')]
-      },
-      browserSniff: false,
-      setAllHeaders: true
-  }));
+ 
   app.use(helmet.hsts({
     maxAge: 604800,
     force: true,
@@ -68,10 +57,9 @@ client.on('connect', function(){
   
   app.enable('trust proxy');
   
-  
-  server.listen(appEnv.port || config.port, function() {
-	    console.log("server listening on " + appEnv.url);
-	  });
+  var port = process.env.port || 8080;
+  server.listen(port);
+
   
   var usernames = {};
   var sockets = {};
