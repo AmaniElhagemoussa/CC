@@ -1,5 +1,5 @@
 
-$(document).ready(function() {
+$(function() {
 	var FADE_TIME = 150; // ms
 	var TYPING_TIMER_LENGTH = 400; // ms
 	var passwordRegex = /.{6,}/;
@@ -23,7 +23,7 @@ $(document).ready(function() {
 	var $currentInput = $usernameInput.focus();
 	var privat = false;
 
-	var socket = io();
+	var socket = io({transports:['websocket']});
 
 	$('$usernameInput').keydown(function(event) {
   		if(event.keyCode == 13){ //Enter pressed
